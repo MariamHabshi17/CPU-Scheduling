@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#add-process-btn").click(function () {
+                var processName = $("#process-name").val();
+                var arrivalTime = parseInt($("#process-arrival").val());
+                var burstTime = parseInt($("#process-burst").val());
+                var priority = parseInt($("#process-priority").val());
+
+                if (!processName || isNaN(arrivalTime) || isNaN(burstTime) || isNaN(priority)) {
+                    alert("Please check to enter all fields correctly.");
+                    return;
+                }
+                if (arrivalTime < 0) {
+                    alert("Arrival time starts from 0 and cannot be negative.");
+                    return;
+                }
+                if (burstTime <= 0) {
+                    alert("Burst time must be greater than 0.");
+                    return;
+                }
+
+                var isDuplicate = false;
+                $(".table tbody tr").each(function () {
+                    var existingProcess = $(this).find(".process-name-cell").text().trim();
+                    if (existingProcess === processName) {
+                        isDuplicate = true;
+                        return false;
+                    }
+                });
+                if (isDuplicate) {
+                    alert("Process names must be unique.");
+                    return;
+                }
+
+                if ($(".table tbody tr").length === 1 && $(".table tbody tr .process-name-cell").text().trim() === "example: p1") {
+                    $(".table tbody tr").remove();
+                }
+
+                $(".table tbody").append(
+                    '<tr class="fadetext">' +
+                    '<td><input type="checkbox" class="select-row"></td>' +
+                    '<td class="process-name-cell">' + processName + '</td>' +
+                    '<td class="arrival-time-cell">' + arrivalTime + '</td>' +
+                    '<td class="burst-time-cell">' + burstTime + '</td>' +
+                    '<td class="priority-cell">' + priority + '</td>' +
+                    '</tr>'
+                );
+
+                // Update hidden input with process data
+                updateProcessesInput();
+
+                // Clear form fields after adding
+                $("#process-name").val("");
+                $("#process-arrival").val("");
+                $("#process-burst").val("");
+                $("#process-priority").val("");
+            });
+
+            // Function to update hidden input with process data
+            function updateProcessesInput() {
+                var processes = [];
+                $(".table tbody tr").each(function () {
+                    var processName = $(this).find(".process-name-cell").text().trim();
+                    var arrivalTime = parseInt($(this).find(".arrival-time-cell").text().trim());
+                    var burstTime = parseInt($(this).find(".burst-time-cell").text().trim());
+                     var priority = parseInt($(this).find(".priority-cell").text().trim());
+                    processes.push({
+                        process_name: processName,
+                        arrival_time: arrivalTime,
+                        burst_time: burstTime,
+                         priority : priority
+                    });
+                });
+
+                // Populate the hidden input with the process data
+                $("#processes-input").val(JSON.stringify(processes));
+            }
+
+            $("#select-all").click(function () {
+                var isSelected = $(this).is(":checked");
+                $(".table tbody tr").each(function () {
+                    $(this).find("input[type='checkbox']").prop("checked", isSelected);
+                });
+            });
+
+            $("#remove-process").click(function () {
+                $(".table tbody tr").each(function () {
+                    var isChecked = $(this).find("input[type='checkbox']").is(":checked");
+                    if (isChecked) {
+                        $(this).remove();
+                    }
+                });
+                // Update hidden input after removal
+                updateProcessesInput();
+            });
+
+
+            $("#priority-form").submit(function (event) {
+                event.preventDefault(); // Prevent form submission
+                // Ensure hidden input is populated before submitting
+                updateProcessesInput();
+
+                // Check if processes are added before submitting
+                if ($("#processes-input").val().trim() === "[]") {
+                    alert("Please add at least one process.");
+                    return false;
+                }
+
+                // Perform AJAX request to submit the data and render result table
+                $.ajax({
+                    type: 'POST',
+                    url: '/process',
+                    data: $(this).serialize() + "&scheduling_type=priprity",
+                    success: function (response) {
+                        // replace the results container with new results
+                        $(".results-container").html(response);
+
+                    },
+                    error: function (error) {
+                        console.error("Error submitting form:", error);
+                        alert("Error calculating Priority Algorithm. See console for details.");
+                    }
+                });
+            });
+        });
+    </script>
+
+    <title>Priority Scheduling</title>
+</head>
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing: border-box;
+    }
+    .form-div {
+        margin-top: 50px;
+        padding: 10px;
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+    }
+    .table {
+        margin-top: 30px;
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+    }
+    .table thead tr {
+        background-color: rgb(188, 211, 255);
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+        border: 1px solid rgb(245, 245, 245);
+    }
+    .table th, .table td {
+        padding: 10px;
+        text-align: center;
+    }
+    .table tbody tr:hover {
+        background-color: rgba(172, 205, 255, 0.452);
+    }
+    .table tbody tr:active {
+        box-shadow: 0px 0px 5px black;
+        background-color: rgb(0, 27, 78);
+    }
+     #add-process-btn {
+         display: block;
+        margin: 10px auto; /* Center horizontally */
+        text-align: center;
+        padding: 5px;
+        border: 0.5px solid rgb(208, 225, 255) !important;
+        outline: rgba(0, 0, 139, 0.37) !important;
+        color: white;
+        width: 200px !important;
+        height: 40px;
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+    }
+    #add-process-btn:active {
+        border: 0.5px solid rgb(208, 225, 255);
+        background-color: rgba(115, 164, 255, 0.973) !important;
+    }
+    #remove-process {
+        margin: 10px;
+        text-align: center;
+        padding: 5px;
+        border: 0.5px solid rgb(208, 225, 255) !important;
+        outline: rgba(0, 0, 139, 0.37) !important;
+        color: white;
+        width: 200px !important;
+        height: 40px;
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+    }
+    #remove-process:active {
+        border: 0.5px solid rgb(208, 225, 255);
+        background-color: rgba(115, 164, 255, 0.973) !important;
+    }
+    .fadetext {
+        animation: fadetext 1s ease;
+    }
+    @keyframes fadetext {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    .results-container {
+        display: block;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: auto; /* Expand to container width */
+        padding-right: 10px;
+        padding-left: 10px;
+        box-shadow: 0px 0px 5px rgb(245, 245, 245);
+        background-color: aliceblue;
+        overflow:auto;
+        margin-left:0;
+    }
+    .results-container .table {
+        width: 100%;
+        table-layout: auto; /* Let browser calculate column widths */
+        border-collapse: collapse;
+    }
+    .results-container .table th,
+    .results-container .table td {
+        text-align: center;
+        width:auto;
+        white-space: nowrap;
+        border: 1px solid #ddd;
+    }
+</style>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/fcfs">FCFS</a></li>
+            <li><a href="/sjf">SJF</a></li>
+            <li><a href="/rr">Round Robin</a></li>
+            <li><a href="/priority">Priority</a></li>
+        </ul>
+    </nav>
+
+    <h1 class="Heading">Priority Scheduling</h1>
+    <section id="cpu-scheduling">
+        <p>
+            Priority scheduling is a scheduling algorithm that assigns higher priority to processes with higher priority values. This algorithm is often used in operating systems to manage processes and resources.
+        </p>
+    </section>
+
+    <div class="container">
+        <!-- Input Form -->
+        <form method="POST" action="/process" id="priority">
+            <div class="form-div">
+                <div class="row" style="text-align: center;">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="process-name" placeholder="Enter Process Name" aria-label="Process Name" name="process_name">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="process-arrival" placeholder="Enter Process Arrival Time" aria-label="Process Arrival Time" name="arrival_time">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="process-burst" placeholder="Enter Process Burst Time" aria-label="Process Burst Time" name="burst_time">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="process-priority" placeholder="Enter Process Priority" aria-label="Process Priority" name="priority">
+                    </div>
+
+                </div>
+                <div class="row">
+                   <div class="col-md-12">
+                     <button type="button" class="btn btn-primary" id="add-process-btn" style="background-color: rgb(0, 26, 75) !important; border-color: black !important; margin-top: 17px;">Add Process</button>
+                   </div>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="container">
+                <table class="table" style="background-color: aliceblue;">
+                    <thead>
+                        <tr>
+                            <th>All <input type="checkbox" id="select-all"></th>
+                            <th>Process Name</th>
+                            <th>Arrival Time</th>
+                            <th>Burst Time</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox" class="select-row"></td>
+                            <td class="process-name-cell">example: p1</td>
+                            <td class="arrival-time-cell">example: 0</td>
+                            <td class="burst-time-cell">example: 5</td>
+                             <td class="priority-cell">example: 2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" id="remove-process" style="background-color: rgb(0, 26, 75) !important; border-color: black !important;">Remove Process</button>
+            </div>
+
+            <!-- Hidden input to store process data -->
+            <input type="hidden" id="processes-input" name="processes">
+
+            <!-- Submit button -->
+            <div class="form-group row" style="text-align: center; margin-top: 20px;">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary" id="submit-btn" style="background-color: rgb(0, 26, 75) !important; border-color: black !important;">Calculate</button>
+                </div>
+            </div>
+        </form>
+        <div class="results-container">
+            {% if gantt_chart %}
+                <h2>Results</h2>
+                <h3>Gantt Chart</h3>
+                <p>{{ gantt_chart | join(' -> ') }}</p>
+
+                <h3>Process Table</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Process Name</th>
+                            <th>Arrival Time</th>
+                            <th>Burst Time</th>
+                             <th>Priority</th>
+                            <th>Start Time</th>
+                            <th>Completion Time</th>
+                            <th>Waiting Time</th>
+                            <th>Turnaround Time</th>
+                            <th>Response Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result['Process Name'] }}</td>
+                            <td>{{ result['Arrival Time'] }}</td>
+                            <td>{{ result['Burst Time'] }}</td>
+                             <td>{{ result['Priority'] }}</td>
+                            <td>{{ result['Start Time'] }}</td>
+                            <td>{{ result['Completion Time'] }}</td>
+                            <td>{{ result['Waiting Time'] }}</td>
+                            <td>{{ result['Turnaround Time'] }}</td>
+                            <td>{{ result['Response Time'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3>Averages</h3>
+                <p>Average Waiting Time: {{ avg_waiting_time }}</p>
+                <p>Average Turnaround Time: {{ avg_turnaround_time }}</p>
+                <p>Average Response Time: {{ avg_response_time }}</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>

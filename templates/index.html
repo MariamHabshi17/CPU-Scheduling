@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>CPU Scheduler</title>
+</head>
+<body>
+    <nav>
+        <ul class="sidebar">
+            <li onclick="hideSidebar()"><a href="/"><svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg></a></li>
+            <li><a href="/fcfs">FCFS</a></li>
+            <li><a href="/sjf">SJF</a></li>
+            <li><a href="/rr">Round Robin</a></li>
+            <li><a href="/priority">Priority</a></li>
+        </ul>
+        
+        <ul>
+            <li class="hideOnMobile"><a href="/">Home</a></li>
+            <li class="hideOnMobile"><a href="/fcfs">FCFS</a></li>
+            <li class="hideOnMobile"><a href="/sjf">SJF</a></li>
+            <li class="hideOnMobile"><a href="/rr">Round Robin</a></li>
+            <li class="hideOnMobile"><a href="/priority">Priority</a></li>
+            <li class="menu-button" onclick="showSidebar()"><a href="#"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z"/></svg></a></li>
+        </ul>
+    </nav>
+    <h1 class="Heading">CPU Scheduling</h1>
+    <section id="cpu-scheduling">
+        <p>
+            It's a process that allows one process to use the CPU while the execution of another is on hold (in waiting state)<br>due to the unavailability of any resource (like I/O).It is an essential part of a multitasking operating system.<br>The goal of CPU scheduling is to optimize CPU usage and provide an efficient environment for processes to run.
+        </p>
+    </section>
+
+    <section id="scheduling-algorithms">
+        <div class="card-container">
+            <!-- FCFS Card -->
+            <div class="card">
+                
+                <h2>FCFS</h2>
+                <p>First-Come, First-Served (FCFS) is the simplest CPU scheduling algorithm. Processes are executed in the order they arrive in the ready queue, leading to a non-preemptive system.</p>
+                <a href="fcfs.html"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368" style="margin-top: 20px;"><path d="M313-40q-24 0-46-9t-39-26L24-280l33-34q14-14 34-19t40 0l69 20v-327q0-17 11.5-28.5T240-680q17 0 28.5 11.5T280-640v433l-98-28 103 103q6 6 13 9t15 3h167q33 0 56.5-23.5T560-200v-160q0-17 11.5-28.5T600-400q17 0 28.5 11.5T640-360v160q0 66-47 113T480-40H313Zm7-280v-160q0-17 11.5-28.5T360-520q17 0 28.5 11.5T400-480v160h-80Zm120 0v-120q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440v120h-80Zm40 200H285h195Zm160-400q-91 0-168-48T360-700q35-84 112-132t168-48q91 0 168 48t112 132q-35 84-112 132t-168 48Zm0-80q57 0 107.5-26t82.5-74q-32-48-82.5-74T640-800q-57 0-107.5 26T450-700q32 48 82.5 74T640-600Zm0-40q-25 0-42.5-17.5T580-700q0-25 17.5-42.5T640-760q25 0 42.5 17.5T700-700q0 25-17.5 42.5T640-640Z"/></svg></a>
+            </div>
+    
+            <!-- SJF Card -->
+            <div class="card">
+                <a href="sjf.html"></a>
+                <h2>SJF</h2>
+                <p>Shortest Job First (SJF) schedules processes based on the shortest execution time. It can be preemptive or non-preemptive and aims to minimize average waiting time.</p>
+            </div>
+    
+            <!-- Round Robin Card -->
+            <div class="card">
+                <h2>Round Robin</h2>
+                <p>Round Robin (RR) is a CPU scheduling algorithm that assigns a fixed time slice to each process in a cyclic order. It is preemptive and ensures that all processes are treated equally, avoiding starvation.</p>
+            </div>
+
+            <!-- Priority Card -->
+            <div class="card">
+                <h2>Priority</h2>
+                <p>The Priority scheduling algorithm executes processes based on priority. Higher-priority processes are executed first, while lower-priority processes wait.</p>
+            </div>
+    
+            
+        </div>
+    </section>
+
+    <script>
+        function showSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.display = 'flex';
+        }
+
+        function hideSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const primaryColor = "rgb(0, 26, 75)";
+             const errorContainer = $("#error-message");
+              function clearErrors(){
+               errorContainer.empty();
+             }
+              function displayError(message) {
+               errorContainer.html(`<p style="color:red;">${message}</p>`);
+              }
+            $("#add-process-btn").click(function () {
+                 clearErrors();
+                var processName = $("#process-name").val().trim();
+                var arrivalTime = parseInt($("#process-arrival").val());
+                var burstTime = parseInt($("#process-burst").val());
+    
+                if (!processName) {
+                     displayError("Please enter a process name.");
+                    return;
+                }
+                if (isNaN(arrivalTime) || isNaN(burstTime)) {
+                    displayError("Arrival and burst time must be valid numbers.");
+                    return;
+                }
+                if (arrivalTime < 0) {
+                    displayError("Arrival time starts from 0 and cannot be negative.");
+                    return;
+                }
+                if (burstTime <= 0) {
+                    displayError("Burst time must be greater than 0.");
+                    return;
+                }
+    
+                var isDuplicate = false;
+                $(".table tbody tr").each(function () {
+                    var existingProcess = $(this).find(".process-name-cell").text().trim();
+                    if (existingProcess === processName) {
+                        isDuplicate = true;
+                        return false;
+                    }
+                });
+                if (isDuplicate) {
+                     displayError("Process names must be unique.");
+                    return;
+                }
+    
+                if ($(".table tbody tr").length === 1 && $(".table tbody tr .process-name-cell").text().trim() === "example: p1") {
+                    $(".table tbody tr").remove();
+                }
+    
+                $(".table tbody").append(
+                    '<tr class="fadetext">' +
+                    '<td><input type="checkbox" class="select-row"></td>' +
+                    '<td class="process-name-cell">' + processName + '</td>' +
+                    '<td class="arrival-time-cell">' + arrivalTime + '</td>' +
+                    '<td class="burst-time-cell">' + burstTime + '</td>' +
+                    '</tr>'
+                );
+    
+                // Update hidden input with process data
+                updateProcessesInput();
+    
+                // Clear form fields after adding
+                $("#process-name").val("");
+                $("#process-arrival").val("");
+                $("#process-burst").val("");
+                $("#process-name").focus();
+            });
+    
+            // Function to update hidden input with process data
+            function updateProcessesInput() {
+                var processes = [];
+                $(".table tbody tr").each(function () {
+                    var processName = $(this).find(".process-name-cell").text().trim();
+                    var arrivalTime = parseInt($(this).find(".arrival-time-cell").text().trim());
+                    var burstTime = parseInt($(this).find(".burst-time-cell").text().trim());
+                    processes.push({
+                        process_name: processName,
+                        arrival_time: arrivalTime,
+                        burst_time: burstTime
+                    });
+                });
+    
+                // Populate the hidden input with the process data
+                $("#processes-input").val(JSON.stringify(processes));
+            }
+    
+            $("#select-all").click(function () {
+                var isSelected = $(this).is(":checked");
+                $(".table tbody tr").each(function () {
+                    $(this).find("input[type='checkbox']").prop("checked", isSelected);
+                });
+            }); $("#remove-process").click(function () {
+                $(".table tbody tr").each(function () {
+                    var isChecked = $(this).find("input[type='checkbox']").is(":checked");
+                    if (isChecked) {
+                        $(this).remove();
+                    }
+                });
+                // Update hidden input after removal
+                updateProcessesInput();
+                   $("#process-name").focus();
+            });
+    
+            $("#rr-form").submit(function (event) {
+                 clearErrors();
+                event.preventDefault(); // Prevent form submission
+                // Ensure hidden input is populated before submitting
+                updateProcessesInput();
+    
+                // Check if processes are added before submitting
+                if ($("#processes-input").val().trim() === "[]") {
+                     displayError("Please add at least one process.");
+                    return false;
+                }
+               // Perform AJAX request to submit the data and render result table
+               $.ajax({
+                    type: 'POST',
+                    url: '/process',
+                    data: $(this).serialize() + "&scheduling_type=rr",
+                   success: function(response) {
+                        // replace the results container with new results
+                       if (response.error) {
+                         displayError(response.error);
+                          return;
+                        }
+                      var resultsHtml = `
+                         <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Gantt Chart</th>
+                                </tr>
+                             </thead>
+                            <tbody>
+                                  <tr>
+                                    <td>${response.gantt_chart.join(" | ")}</td>
+                                </tr>
+                            </tbody>
+                         </table>
+                         <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Process Name</th>
+                                    <th>Arrival Time</th>
+                                    <th>Burst Time</th>
+                                    <th>Start Time</th>
+                                    <th>Completion Time</th>
+                                    <th>Waiting Time</th>
+                                    <th>Turnaround Time</th>
+                                    <th>Response Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                      `;
+
+                      response.results.forEach(result => {
+                            resultsHtml +=`
+                                <tr>
+                                 <td>${result['process_name']}</td>
+                                  <td>${result['arrival_time']}</td>
+                                    <td>${result['burst_time']}</td>
+                                    <td>${result['start_time']}</td>
+                                  <td>${result['completion_time']}</td>
+                                  <td>${result['waiting_time']}</td>
+                                    <td>${result['turnaround_time']}</td>
+                                    <td>${result['response_time']}</td>
+                                 </tr>
+                            `;
+                         });
+                         resultsHtml += `</tbody>
+                         </table>
+                           <div style="margin-top:10px; padding:10px;">
+                           <p>Average Waiting Time: ${response.avg_waiting_time.toFixed(2)}</p>
+                           <p>Average Turnaround Time: ${response.avg_turnaround_time.toFixed(2)}</p>
+                            <p>Average Response Time: ${response.avg_response_time.toFixed(2)}</p>
+                         </div>
+                         `;
+                      $(".results-container").html(resultsHtml);
+                         $(".results-container").css("background-color", "aliceblue");
+                   },
+                   error: function(error) {
+                        console.error("Error submitting form:", error);
+                        displayError("Error calculating Round Robin. See console for details.");
+                    }
+               });
+            });
+             //initial setup of the results container
+              $(".results-container").css("background-color", "transparent");
+        });
+    </script>
+
+    <title>Round Robin Scheduling</title>
+</head>
+<style>
+     :root{
+       --primary-color: rgb(0, 26, 75);
+       --secondary-color: rgb(188, 211, 255);
+       --shadow-color: rgb(245, 245, 245);
+     }
+    *{
+        margin:0;
+        padding:0;
+        box-sizing: border-box;
+    }
+    .form-div {
+        margin-top: 50px;
+        padding: 10px;
+        box-shadow: 0px 0px 5px var(--shadow-color);
+    }
+    .table {
+        margin-top: 30px;
+        box-shadow: 0px 0px 5px var(--shadow-color);
+    }
+    .table thead tr {
+        background-color: var(--secondary-color);
+        box-shadow: 0px 0px 5px var(--shadow-color);
+        border: 1px solid var(--shadow-color);
+    }
+    .table th, .table td {
+        padding: 10px;
+        text-align: center;
+    }
+    .table tbody tr:hover {
+        background-color: rgba(172, 205, 255, 0.452);
+    }
+    .table tbody tr:active {
+        box-shadow: 0px 0px 5px black;
+        background-color: var(--primary-color);
+    }
+    #remove-process {
+        margin: 10px;
+        text-align: center;
+        padding: 5px;
+        border: 0.5px solid rgb(208, 225, 255) !important;
+        outline: rgba(0, 0, 139, 0.37) !important;
+        color: white;
+        width: 200px !important;
+        height: 40px;
+        box-shadow: 0px 0px 5px var(--shadow-color);
+    }
+    #remove-process:active {
+        border: 0.5px solid rgb(208, 225, 255);
+        background-color: rgba(115, 164, 255, 0.973) !important;
+    }
+    .fadetext {
+        animation: fadetext 1s ease;
+    }
+    @keyframes fadetext {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    .results-container {
+        display: block;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: auto; /* Expand to container width */
+        padding-right: 10px;
+        padding-left: 10px;
+        box-shadow: 0px 0px 5px var(--shadow-color);
+        overflow:auto;
+        margin-left:0;
+    }
+    .results-container .table {
+        width: 100%;
+        table-layout: auto; /* Let browser calculate column widths */
+        border-collapse: collapse;
+    }
+    .results-container .table th,
+    .results-container .table td {
+        text-align: center;
+         width:auto;
+        white-space: nowrap;
+        border: 1px solid #ddd;
+    }
+    #error-message{
+      margin-top: 10px;
+      text-align:center;
+    }
+</style>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/fcfs">FCFS</a></li>
+            <li><a href="/sjf">SJF</a></li>
+            <li><a href="/rr">Round Robin</a></li>
+            <li><a href="/priority">Priority</a></li>
+        </ul>
+    </nav>
+
+    <h1 class="Heading">Round Robin Scheduling</h1>
+    <section id="cpu-scheduling">
+        <p>
+           Round Robin (RR) is a preemptive CPU scheduling algorithm that assigns a fixed time slice or quantum to each process in the ready queue. Processes are executed in a cyclic order, and when a process's time slice expires, it is moved to the back of the queue to allow the next process to run. This ensures that each process gets an equal share of CPU time and prevents any process from monopolizing the CPU, making it ideal for time-sharing systems.
+        </p>
+    </section>
+
+    <div class="container">
+        <!-- Input Form -->
+        <form method="POST" action="/process" id="rr-form">
+            <div class="form-div">
+                <div class="row" style="text-align: center;">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="process-name" placeholder="Enter Process Name" aria-label="Process Name" name="process_name">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="process-arrival" placeholder="Enter Process Arrival Time" aria-label="Process Arrival Time" name="arrival_time">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="process-burst" placeholder="Enter Process Burst Time" aria-label="Process Burst Time" name="burst_time">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-primary" id="add-process-btn" style="background-color: var(--primary-color) !important; border-color: black !important;">Add Process</button>
+                    </div>
+                </div>
+            </div>
+           <div id="error-message"></div>
+            <!-- Table Section -->
+            <div class="container">
+                <table class="table" style="background-color: aliceblue;">
+                    <thead>
+                        <tr>
+                            <th>All <input type="checkbox" id="select-all"></th>
+                            <th>Process Name</th>
+                            <th>Arrival Time</th>
+                            <th>Burst Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox" class="select-row"></td>
+                            <td class="process-name-cell">example: p1</td>
+                            <td class="arrival-time-cell">example: 0</td>
+                            <td class="burst-time-cell">example: 5</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" id="remove-process" style="background-color: var(--primary-color) !important; border-color: black !important;">Remove Process</button>
+            </div>
+
+            <!-- Hidden input to store process data -->
+            <input type="hidden" id="processes-input" name="processes">
+            <!--Quantum time for RR-->
+           <div class="form-group row" style="margin-top: 20px; display:flex; align-items:center; width:60%;">
+               <div class="col-md-4">
+                   <label for="quantum-time" class="col-form-label" style="color: white;  padding-left:25px;">Quantum Time:</label>
+               </div>
+               <div class="col-md-2" style="margin:0; padding:0; width:30%">
+                   <input type="number" class="form-control" id="quantum-time" name="time_quantum" required>
+               </div>
+           </div>
+<!-- Submit button -->
+            <div class="form-group row" style="text-align: center; margin-top: 20px;">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary" id="submit-btn" style="background-color: var(--primary-color) !important; border-color: black !important;">Calculate RR</button>
+                </div>
+            </div>
+        </form>
+      <div class="results-container">
+          <h2>Results will appear here</h2>
+      </div>
+    </div>
+</body>
+
+</html>

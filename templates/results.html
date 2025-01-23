@@ -1,0 +1,40 @@
+<div class="results-container">
+    <h2>Results</h2>
+    <h3>Gantt Chart</h3>
+    <p>{{ gantt_chart | join(' | ') }}</p>
+
+    <h3>Process Table</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Process Name</th>
+                <th>Arrival Time</th>
+                <th>Burst Time</th>
+                <th>Start Time</th>
+                <th>Completion Time</th>
+                <th>Waiting Time</th>
+                <th>Turnaround Time</th>
+                <th>Response Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>{{ result['Process Name'] }}</td>
+                <td>{{ result['Arrival Time'] }}</td>
+                <td>{{ result['Burst Time'] }}</td>
+                <td>{{ result['Start Time'] }}</td>
+                <td>{{ result['Completion Time'] }}</td>
+                <td>{{ result['Waiting Time'] }}</td>
+                <td>{{ result['Turnaround Time'] }}</td>
+                 <td>{{ result['Response Time'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Averages</h3>
+    <p>Average Waiting Time: {{ avg_waiting_time }}</p>
+    <p>Average Turnaround Time: {{ avg_turnaround_time }}</p>
+    <p>Average Response Time: {{ avg_response_time }}</p>
+</div>
